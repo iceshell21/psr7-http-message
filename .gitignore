@@ -1,0 +1,42 @@
+# Composer
+/vendor/
+composer.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OSPanel 6
+.osp/
+index.php
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Cache
+/cache/
+/tmp/
+
+# Tests
+/coverage/
+/coverage-html/
+coverage.txt
+coverage.xml
+cobertura.xml
+crap4j.xml
+tests-results.xml
+.phpunit.result.cache
+.phpunit.cache/
+
+# Keep phpunit-strict.xml (not ignored)
+
+# Environment
+.env
+.env.local
+.env.*.local
