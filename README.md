@@ -1,10 +1,6 @@
 
 # PSR-7 HTTP Message Implementation
 
-[![Latest Version](https://i.ytimg.com/vi/UFRkDVaH2vg/maxresdefault.jpg)
-[![PHP Version](https://i.ytimg.com/vi/lFxazziOMyI/hqdefault.jpg)
-[![License](https://i.ytimg.com/vi/426ISsgauLs/maxresdefault.jpg?sqp=-oaymwEmCIAKENAF8quKqQMa8AEB-AH-CYAC0AWKAgwIABABGDsgXihlMA8=&amp;rs=AOn4CLD6gPkyoV3rfJjv_cHdQ6s4SuNttA)
-
 A modern, high-performance PSR-7 HTTP Message implementation with PSR-17 HTTP Factories for PHP 8.3+.
 
 ## Features
