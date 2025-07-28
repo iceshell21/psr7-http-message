@@ -12,7 +12,6 @@ A modern, high-performance PSR-7 HTTP Message implementation with PSR-17 HTTP Fa
 - ✅ Memory-efficient stream handling
 - ✅ Comprehensive HTTP status code enum
 - ✅ Built-in JSON and HTML response classes
-- ✅ SAPI emitter for response output
 - ✅ Strict type declarations throughout
 - ✅ Extensive test coverage
 
