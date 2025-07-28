@@ -104,15 +104,6 @@ $queryParams = $serverRequest->getQueryParams();
 $parsedBody = $serverRequest->getParsedBody();
 ```
 
-### Emitting Responses
-
-```php
-use IceShell21\Psr7HttpMessage\Emitter\SapiEmitter;
-
-$emitter = new SapiEmitter();
-$emitter->emit($response);
-```
-
 ## Advanced Usage
 
 ### Custom Stream Handling
