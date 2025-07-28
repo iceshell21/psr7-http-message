@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace IceShell21\Psr7HttpMessage\Tests\Integration;
 
-use IceShell21\Psr7HttpMessage\Emitter\SapiEmitter;
 use IceShell21\Psr7HttpMessage\Response\JsonResponse;
 use IceShell21\Psr7HttpMessage\Response\HtmlResponse;
 use IceShell21\Psr7HttpMessage\Enum\HttpStatusCode;
@@ -13,7 +12,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * Integration tests for response emission.
  */
-final class ResponseEmissionTest extends TestCase
+final class ResponseTest extends TestCase
 {
     public function testJsonResponseCreation(): void
     {
@@ -33,12 +32,5 @@ final class ResponseEmissionTest extends TestCase
         $this->assertSame(200, $response->getStatusCode());
         $this->assertSame(['text/html; charset=utf-8'], $response->getHeader('Content-Type'));
         $this->assertSame($html, (string) $response->getBody());
-    }
-
-    public function testSapiEmitterInstantiation(): void
-    {
-        $emitter = new SapiEmitter();
-        
-        $this->assertInstanceOf(SapiEmitter::class, $emitter);
     }
 }
