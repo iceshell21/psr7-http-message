@@ -28,6 +28,14 @@ final class HeaderCollection
     }
 
     /**
+     * Get header values as a comma-separated string.
+     */
+    public function getLine(string $name): string
+    {
+        return implode(', ', $this->get($name));
+    }
+
+    /**
      * Check if header exists (case-insensitive).
      */
     public function has(string $name): bool
@@ -63,6 +71,16 @@ final class HeaderCollection
             : $values;
             
         return new self($headers);
+    }
+
+    /**
+     * Alias for withAdded() to match SecureHeaderCollection API.
+     *
+     * @param string|array<string> $value
+     */
+    public function withAddedValue(string $name, string|array $value): self
+    {
+        return $this->withAdded($name, $value);
     }
 
     /**

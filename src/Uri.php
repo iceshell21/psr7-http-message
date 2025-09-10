@@ -5,16 +5,32 @@ declare(strict_types=1);
 namespace IceShell21\Psr7HttpMessage;
 
 use InvalidArgumentException;
+use IceShell21\Psr7HttpMessage\Security\SecurityValidator;
 use Psr\Http\Message\UriInterface;
 
 /**
  * RFC 3986 compliant URI implementation with efficient parsing and validation.
+ * Enhanced with PHP 8.4+ features and security validation.
  */
 final class Uri implements UriInterface
 {
-    private const SCHEMES = ['http' => 80, 'https' => 443];
+    private const SCHEMES = ['http' => 80, 'https' => 443, 'ftp' => 21, 'ftps' => 990];
     private const CHAR_UNRESERVED = 'a-zA-Z0-9_\-\.~';
     private const CHAR_SUB_DELIMS = '!\$&\'\(\)\*\+,;=';
+    
+    private ?SecurityValidator $validator = null;
+    
+    // Property hook for computed authority (PHP 8.4+)
+    public string $computedAuthority {
+        get => $this->getAuthority();
+    }
+    
+    // Asymmetric visibility for URI statistics (PHP 8.4+)
+    public private(set) array $uriStats = [
+        'parsed' => false,
+        'validated' => false,
+        'length' => 0,
+    ];
 
     public function __construct(
         private string $scheme = '',
@@ -25,9 +41,21 @@ final class Uri implements UriInterface
         private string $query = '',
         private string $fragment = ''
     ) {
+        // Initialize security validator
+        $this->validator = new SecurityValidator(strictMode: false);
+        
         if (func_num_args() === 1 && is_string($scheme)) {
             $this->parseUri($scheme);
+            $this->uriStats['parsed'] = true;
         }
+        
+        // Validate components if provided
+        if ($this->scheme !== '' || $this->host !== '') {
+            $this->validateComponents();
+            $this->uriStats['validated'] = true;
+        }
+        
+        $this->uriStats['length'] = strlen($this->__toString());
     }
 
     private function parseUri(string $uri): void
@@ -35,6 +63,9 @@ final class Uri implements UriInterface
         if ($uri === '') {
             return;
         }
+        
+        // Security validation
+        $this->validator?->validateUri($uri);
 
         $parts = parse_url($uri);
         if ($parts === false) {
@@ -269,5 +300,59 @@ final class Uri implements UriInterface
     private function rawurlencodeMatchZero(array $match): string
     {
         return rawurlencode($match[0]);
+    }
+    
+    /**
+     * Validate URI components for security.
+     */
+    private function validateComponents(): void
+    {
+        if ($this->scheme !== '') {
+            $this->validator?->validateUri($this->scheme . '://' . $this->host);
+        }
+    }
+    
+    /**
+     * Create URI from string with validation.
+     */
+    public static function fromString(string $uri): self
+    {
+        return new self($uri);
+    }
+    
+    /**
+     * Get URI security and performance statistics.
+     */
+    public function getStats(): array
+    {
+        return [
+            'uri_stats' => $this->uriStats,
+            'scheme' => $this->scheme,
+            'has_authority' => $this->getAuthority() !== '',
+            'has_userinfo' => $this->userInfo !== '',
+            'host_type' => $this->getHostType(),
+            'default_port' => $this->isStandardPort($this->scheme, $this->port ?? 0),
+            'path_segments' => count(array_filter(explode('/', $this->path))),
+            'query_params' => $this->query !== '' ? count(parse_str($this->query, $params) ?: []) : 0,
+            'has_fragment' => $this->fragment !== '',
+            'total_length' => $this->uriStats['length'],
+        ];
+    }
+    
+    private function getHostType(): string
+    {
+        if ($this->host === '') {
+            return 'none';
+        }
+        
+        if (filter_var($this->host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            return 'ipv4';
+        }
+        
+        if (filter_var($this->host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+            return 'ipv6';
+        }
+        
+        return 'domain';
     }
 }

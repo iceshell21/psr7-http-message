@@ -6,12 +6,14 @@ namespace IceShell21\Psr7HttpMessage;
 
 use IceShell21\Psr7HttpMessage\Enum\HttpMethod;
 use IceShell21\Psr7HttpMessage\Trait\MessageTrait;
+use IceShell21\Psr7HttpMessage\Security\SecurityValidator;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UriInterface;
 
 /**
  * HTTP request implementation with immutable design.
+ * Enhanced with PHP 8.4+ features, security validation and performance monitoring.
  */
 class Request implements RequestInterface
 {
@@ -19,6 +21,19 @@ class Request implements RequestInterface
 
     private ?string $requestTarget = null;
     private UriInterface $uri;
+    private ?SecurityValidator $validator = null;
+    
+    // Property hook for computed request target (PHP 8.4+)
+    public string $computedRequestTarget {
+        get => $this->requestTarget ??= $this->createRequestTarget();
+    }
+    
+    // Asymmetric visibility for performance stats (PHP 8.4+)
+    public private(set) array $performanceStats = [
+        'request_target_computed' => false,
+        'headers_validated' => false,
+        'uri_validated' => false,
+    ];
 
     public function __construct(
         private HttpMethod $method = HttpMethod::GET,
@@ -27,9 +42,23 @@ class Request implements RequestInterface
         private ?StreamInterface $body = null,
         private string $protocolVersion = '1.1'
     ) {
+        // Initialize security validator
+        $this->validator = new SecurityValidator(strictMode: false);
+        
+        // Validate HTTP method
+        $this->validator->validateHttpMethod($this->method->value);
+        
+        // Convert and validate URI
         $this->uri = $uri instanceof UriInterface ? $uri : new Uri($uri);
+        $this->validator->validateUriObject($this->uri);
+        $this->performanceStats['uri_validated'] = true;
+        
+        // Create body and initialize headers
         $this->body = $this->createBody($body);
         $this->initializeHeaders($headers);
+        $this->performanceStats['headers_validated'] = true;
+        
+        // Auto-add Host header if needed
         $this->addHostHeaderIfNeeded();
     }
 
@@ -51,7 +80,11 @@ class Request implements RequestInterface
 
     public function getRequestTarget(): string
     {
-        return $this->requestTarget ??= $this->createRequestTarget();
+        if ($this->requestTarget === null) {
+            $this->requestTarget = $this->createRequestTarget();
+            $this->performanceStats['request_target_computed'] = true;
+        }
+        return $this->requestTarget;
     }
 
     private function createRequestTarget(): string
@@ -64,6 +97,9 @@ class Request implements RequestInterface
 
     public function withRequestTarget(string $requestTarget): static
     {
+        // Validate request target
+        $this->validator?->validateRequestTarget($requestTarget);
+        
         return $this->cloneWith('requestTarget', $requestTarget);
     }
 
@@ -74,6 +110,9 @@ class Request implements RequestInterface
 
     public function withMethod(string $method): static
     {
+        // Validate HTTP method
+        $this->validator?->validateHttpMethod($method);
+        
         return $this->cloneWith('method', HttpMethod::fromString($method));
     }
 
@@ -84,6 +123,9 @@ class Request implements RequestInterface
 
     public function withUri(UriInterface $uri, bool $preserveHost = false): static
     {
+        // Validate new URI
+        $this->validator?->validateUriObject($uri);
+        
         $new = clone $this;
         $new->uri = $uri;
         
@@ -100,5 +142,34 @@ class Request implements RequestInterface
         $port = $this->uri->getPort();
         
         return $port !== null ? "{$host}:{$port}" : $host;
+    }
+    
+    /**
+     * Get performance and security statistics.
+     */
+    public function getStats(): array
+    {
+        return [
+            'performance_stats' => $this->performanceStats,
+            'method' => $this->method->value,
+            'uri_scheme' => $this->uri->getScheme(),
+            'headers_count' => count($this->getHeaders()),
+            'body_size' => $this->body?->getSize(),
+            'protocol_version' => $this->protocolVersion,
+        ];
+    }
+    
+    /**
+     * Validate entire request for security compliance.
+     */
+    public function validateSecurity(): bool
+    {
+        try {
+            $this->validator?->validateHttpMethod($this->method->value);
+            $this->validator?->validateUriObject($this->uri);
+            return true;
+        } catch (\Throwable) {
+            return false;
+        }
     }
 }

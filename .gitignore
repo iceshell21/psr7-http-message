@@ -1,5 +1,6 @@
 # Composer
 /vendor/
+/backup/
 composer.lock
 composer.phar
 composer.bat
