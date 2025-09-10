@@ -1,13 +1,13 @@
 
 # PSR-7 HTTP Message Implementation
 
-A modern, high-performance PSR-7 HTTP Message implementation with PSR-17 HTTP Factories for PHP 8.3+.
+A modern, high-performance PSR-7 HTTP Message implementation with PSR-17 HTTP Factories for PHP 8.4+.
 
 ## Features
 
 - ✅ Full PSR-7 HTTP Message Interface compliance
 - ✅ Complete PSR-17 HTTP Factory Interface implementation
-- ✅ Modern PHP 8.3+ features (readonly classes, enums, match expressions)
+- ✅ Modern PHP 8.4+ features (readonly classes, enums, match expressions)
 - ✅ Immutable message objects
 - ✅ Memory-efficient stream handling
 - ✅ Comprehensive HTTP status code enum
@@ -25,7 +25,7 @@ composer require iceshell21/psr7-http-message
 
 ## Requirements
 
-- PHP 8.3 or higher
+- PHP 8.4 or higher
 - PSR-7 HTTP Message interfaces
 - PSR-17 HTTP Factory interfaces
 
