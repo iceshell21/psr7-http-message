@@ -27,18 +27,18 @@ final class ServerRequestFactory implements ServerRequestFactoryInterface
     }
 
     /**
-     * Create server request from PHP superglobals.
+     * Create server request from PHP superglobals (static method).
      */
-    public function createServerRequestFromGlobals(): ServerRequestInterface
+    public static function fromGlobals(): ServerRequestInterface
     {
         $method = HttpMethod::fromString($_SERVER['REQUEST_METHOD'] ?? 'GET');
-        $uri = $this->createUriFromGlobals();
-        $headers = $this->getHeadersFromServer($_SERVER);
+        $uri = self::createUriFromGlobals();
+        $headers = self::getHeadersFromServer($_SERVER);
         $body = new Stream('php://input');
-        $protocolVersion = $this->getProtocolVersion($_SERVER);
+        $protocolVersion = self::getProtocolVersion($_SERVER);
         
-        $uploadedFiles = $this->normalizeUploadedFiles($_FILES ?? []);
-        $parsedBody = $this->getParsedBody($method, $headers);
+        $uploadedFiles = self::normalizeUploadedFiles($_FILES ?? []);
+        $parsedBody = self::getParsedBody($method, $headers);
 
         return new ServerRequest(
             method: $method,
@@ -54,7 +54,17 @@ final class ServerRequestFactory implements ServerRequestFactoryInterface
         );
     }
 
-    private function createUriFromGlobals(): Uri
+    /**
+     * Create server request from PHP superglobals.
+     * 
+     * @deprecated Use ServerRequestFactory::fromGlobals() instead
+     */
+    public function createServerRequestFromGlobals(): ServerRequestInterface
+    {
+        return self::fromGlobals();
+    }
+
+    private static function createUriFromGlobals(): Uri
     {
         $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
         $host = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? 'localhost';
@@ -70,7 +80,7 @@ final class ServerRequestFactory implements ServerRequestFactoryInterface
         return new Uri($scheme, '', $host, $port, $path, $query);
     }
 
-    private function getHeadersFromServer(array $server): array
+    private static function getHeadersFromServer(array $server): array
     {
         $headers = [];
         
@@ -87,7 +97,7 @@ final class ServerRequestFactory implements ServerRequestFactoryInterface
         return $headers;
     }
 
-    private function getProtocolVersion(array $server): string
+    private static function getProtocolVersion(array $server): string
     {
         return match ($server['SERVER_PROTOCOL'] ?? '') {
             'HTTP/1.0' => '1.0',
@@ -96,7 +106,7 @@ final class ServerRequestFactory implements ServerRequestFactoryInterface
         };
     }
 
-    private function normalizeUploadedFiles(array $files): array
+    private static function normalizeUploadedFiles(array $files): array
     {
         $normalized = [];
         
@@ -104,16 +114,16 @@ final class ServerRequestFactory implements ServerRequestFactoryInterface
             if ($value instanceof UploadedFile) {
                 $normalized[$key] = $value;
             } elseif (is_array($value) && isset($value['tmp_name'])) {
-                $normalized[$key] = $this->createUploadedFileFromSpec($value);
+                $normalized[$key] = self::createUploadedFileFromSpec($value);
             } elseif (is_array($value)) {
-                $normalized[$key] = $this->normalizeUploadedFiles($value);
+                $normalized[$key] = self::normalizeUploadedFiles($value);
             }
         }
         
         return $normalized;
     }
 
-    private function createUploadedFileFromSpec(array $value): UploadedFile
+    private static function createUploadedFileFromSpec(array $value): UploadedFile
     {
         return new UploadedFile(
             $value['tmp_name'],
@@ -124,7 +134,7 @@ final class ServerRequestFactory implements ServerRequestFactoryInterface
         );
     }
 
-    private function getParsedBody(HttpMethod $method, array $headers): mixed
+    private static function getParsedBody(HttpMethod $method, array $headers): mixed
     {
         if (!in_array($method, [HttpMethod::POST, HttpMethod::PUT, HttpMethod::PATCH], true)) {
             return null;

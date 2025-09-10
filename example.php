@@ -6,6 +6,7 @@ require_once 'vendor/autoload.php';
 
 use IceShell21\Psr7HttpMessage\Factory\RequestFactory;
 use IceShell21\Psr7HttpMessage\Factory\ResponseFactory;
+use IceShell21\Psr7HttpMessage\Factory\ServerRequestFactory;
 use IceShell21\Psr7HttpMessage\Factory\StreamFactory;
 use IceShell21\Psr7HttpMessage\Factory\UriFactory;
 use IceShell21\Psr7HttpMessage\Response\JsonResponse;
@@ -99,5 +100,92 @@ echo "Original Response Status: " . $originalResponse->getStatusCode() . "\n";
 echo "Modified Response Status: " . $modifiedResponse->getStatusCode() . "\n";
 echo "Modified Response has custom header: " . ($modifiedResponse->hasHeader('X-Custom-Header') ? 'Yes' : 'No') . "\n";
 echo "Original Response has custom header: " . ($originalResponse->hasHeader('X-Custom-Header') ? 'Yes' : 'No') . "\n\n";
+
+// 9. Server Request Creation - NEW STATIC API
+echo "=== Server Request Creation ===\n";
+
+// Установим некоторые переменные для демонстрации
+$_SERVER['REQUEST_METHOD'] = 'POST';
+$_SERVER['HTTP_HOST'] = 'api.example.com';
+$_SERVER['REQUEST_URI'] = '/users/create';
+$_SERVER['QUERY_STRING'] = 'debug=1';
+$_SERVER['HTTP_CONTENT_TYPE'] = 'application/json';
+$_SERVER['HTTP_ACCEPT'] = 'application/json';
+$_SERVER['SERVER_PROTOCOL'] = 'HTTP/1.1';
+$_GET['debug'] = '1';
+$_POST['name'] = 'John Doe';
+$_COOKIE['session'] = 'abc123';
+
+// Новый статический метод (рекомендуемый)
+$serverRequest = ServerRequestFactory::fromGlobals();
+echo "Static method: Created server request\n";
+echo "Method: " . $serverRequest->getMethod() . "\n";
+echo "URI: " . $serverRequest->getUri() . "\n";
+echo "Query Params: " . json_encode($serverRequest->getQueryParams()) . "\n";
+echo "Server Params (partial): " . $serverRequest->getServerParams()['HTTP_HOST'] . "\n";
+
+// Старый способ (для сравнения)
+$factory = new ServerRequestFactory();
+$legacyRequest = $factory->createServerRequestFromGlobals();
+echo "\nInstance method: Created server request\n";
+echo "Method: " . $legacyRequest->getMethod() . "\n";
+echo "URI: " . $legacyRequest->getUri() . "\n";
+echo "Query Params: " . json_encode($legacyRequest->getQueryParams()) . "\n";
+
+// Сравнение объектов
+echo "\nRequests are equivalent: " . 
+     ($serverRequest->getMethod() === $legacyRequest->getMethod() && 
+      (string)$serverRequest->getUri() === (string)$legacyRequest->getUri() ? 'Yes' : 'No') . "\n\n";
+
+// 10. Performance Comparison
+echo "=== Performance Comparison ===\n";
+
+// Тест производительности
+$iterations = 1000;
+
+// Статический метод
+$start = microtime(true);
+for ($i = 0; $i < $iterations; $i++) {
+    ServerRequestFactory::fromGlobals();
+}
+$staticTime = microtime(true) - $start;
+
+// Экземплярный метод
+$start = microtime(true);
+for ($i = 0; $i < $iterations; $i++) {
+    $factory = new ServerRequestFactory();
+    $factory->createServerRequestFromGlobals();
+}
+$instanceTime = microtime(true) - $start;
+
+echo "Static method time: " . number_format($staticTime * 1000, 2) . "ms\n";
+echo "Instance method time: " . number_format($instanceTime * 1000, 2) . "ms\n";
+echo "Performance improvement: " . number_format(($instanceTime - $staticTime) / $instanceTime * 100, 1) . "%\n\n";
+
+// 11. Real-world Usage Examples
+echo "=== Real-world Usage Examples ===\n";
+
+// Пример 1: Простой HTTP обработчик
+function handleRequest(): void {
+    $request = ServerRequestFactory::fromGlobals();
+    
+    if ($request->getMethod() === 'POST') {
+        echo "Handling POST request to: " . $request->getUri()->getPath() . "\n";
+    } else {
+        echo "Handling GET request to: " . $request->getUri()->getPath() . "\n";
+    }
+}
+
+// Пример 2: Middleware pipeline
+function createMiddlewarePipeline() {
+    return ServerRequestFactory::fromGlobals()
+        ->withAttribute('middleware', 'processed')
+        ->withAttribute('timestamp', time());
+}
+
+handleRequest();
+$processedRequest = createMiddlewarePipeline();
+echo "Middleware processed request with attributes: " . 
+     implode(', ', array_keys($processedRequest->getAttributes())) . "\n\n";
 
 echo "=== Example completed successfully! ===\n";
